@@ -5,6 +5,9 @@ import random
 import string
 import datetime, time
 from Utils import TIMEFORMAT
+import threading
+
+lock = threading.Lock()
 
 CREATE_TABLE_TASKS = "create table if not exists TASKS (id INTEGER PRIMARY KEY AUTOINCREMENT, taskName varchar(160), taskOwnerId integer,site varchar(100) , code varchar(8) UNIQUE, clock integer default(3), nextAlert text,  isValid integer default(1))"
 CREATE_TABLE_MEMBERS = "create table if not exists MEMBERS (id integer primary key AUTOINCREMENT, remarkName varchar(100), mobile varchar(20), userId varchar(50) UNIQUE, isExist integer default(1))"
@@ -18,33 +21,41 @@ class DbHandler:
       self.cursor.execute(CREATE_TABLE_MEMBERS)
       self.conn.commit()
 
+   def ExecuteSQL(self, sql):
+      global lock
+      print(sql)
+      lock.acquire(True)
+      try:
+         ret = self.cursor.execute(sql)
+         self.conn.commit()
+      finally:
+         lock.release()
+      return ret
+
    def GetMemberId(self, remarkName):
       sql = 'select id from MEMBERS where remarkName="{}"'.format(remarkName)
-      ret = self.cursor.execute(sql)
-      self.conn.commit()
+      ret = self.ExecuteSQL(sql)
       return ret.fetchone()[0]
 
    def GetRemarkNameById(self, taskOwnerId):
       sql = 'select remarkName from MEMBERS where id="{}"'.format(taskOwnerId)
-      ret = self.cursor.execute(sql)
-      self.conn.commit()
+      ret = self.ExecuteSQL(sql)
       return ret.fetchone()[0]
 
    def GetTaskTitleByCode(self, code):
       print(code)
       sql = 'select * from TASKS where code ="{}"'.format(code)
-      ret = self.cursor.execute(sql)
-      self.conn.commit()
+      ret = self.ExecuteSQL(sql)
       if not ret:
          return None
-      return ret.fetchone()[0]
+      dictrows = [dict(row) for row in ret]
+      return dictrows[0]['taskName']
       #return ret
 
    #TODO: enhance. Could integrate with UpdateTask
    def RemoveTaskByCode(self, code):
       sql = 'update TASKS set isValid = 0 where code = "{}"'.format(code)
-      ret = self.cursor.execute(sql)
-      self.conn.commit()
+      ret = self.ExecuteSQL(sql)
       return ret.fetchone()[0]
 
    def UpdateTask(self, entry, operation):
@@ -62,14 +73,22 @@ class DbHandler:
          endTime = datetime.datetime.now() #+ datetime.timedelta(hours=clock)
          nextAlert = endTime.strftime(TIMEFORMAT)
 
-         code = ''.join(random.sample(string.ascii_uppercase + string.digits, 8))
+         code = ''.join(random.sample(string.digits, 8))
          sql = 'INSERT INTO TASKS (taskName, taskOwnerId, site, clock, code, nextAlert, isValid) values("{}",{},"{}",{},"{}","{}",{})'\
                .format(taskName, taskOwnerId, site, clock, code, nextAlert, isValid)
-         print(sql)
-      if operation == 'Remove':
-         taskOwner = entry['owner']
-         code = entry['code']
-         sql = 'delete from TASKS where code = {}'.format(code)
+         #print(sql)
+      if operation == 'DEL':
+         #taskOwner = entry['owner']
+         print(entry)
+         id = entry.get('id', None)
+         code = entry.get('code', None)
+         sql = 'delete from TASKS where '
+         if id:
+            sql += 'id = "{}"'.format(id)
+         else:
+            if code:
+               sql += 'code = "{}"'.format(code)
+
       if operation == 'Update':
          taskName = entry['taskName']
          taskOwnerId = entry['taskOwnerId']
@@ -81,11 +100,11 @@ class DbHandler:
             .format(taskName, taskOwnerId, clock, nextAlert, isValid, code)
       if not sql:
          return
-      self.cursor.execute(sql)
-      self.conn.commit()
+      print(sql)
+      self.ExecuteSQL(sql)
       return True, 'Success'
 
-   def UpdateUser(self, entry, operation):
+   def UpdateMember(self, entry, operation):
       sql = None
       if operation == 'ADD':
          remarkName = entry['remarkName']
@@ -93,28 +112,32 @@ class DbHandler:
          mobile = entry['mobile']
          isExist = entry['isExist']
          sql = 'INSERT INTO MEMBERS (remarkName, userId, mobile, isExist) VALUES ("{}","{}","{}","{}")'.format(remarkName, userId, mobile, isExist) 
+
+      if operation == 'DEL':
+         id = entry.get('id', None)
+         sql = 'delete from MEMBERS where '
+         if id:
+            sql += 'id = "{}"'.format(id)
       '''
-      if operation == 'Remove':
-         sql = 
       if operation == 'Update':
          sql = 
       if not sql:
          return
       self.cursor.execute()
       '''
-      self.cursor.execute(sql)
-      self.conn.commit()
+      self.ExecuteSQL(sql)
+      return True, 'Success'
 
 
    def ListTasks(self):
       sql = 'select * from TASKS where isValid = 1'
-      ret = self.cursor.execute(sql)
+      ret = self.ExecuteSQL(sql)
       dictrows = [dict(row) for row in ret]
       return dictrows
 
    def ListMembers(self):
       sql = 'select * from MEMBERS'
-      ret = self.cursor.execute(sql)
+      ret = self.ExecuteSQL(sql)
       dictrows = [dict(row) for row in ret]
       return dictrows
 

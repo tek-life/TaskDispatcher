@@ -29,7 +29,6 @@ def WebEntry(port = 80):
    server.serve_forever()
    
 def WeChatEntry():
-   itchat.auto_login(hotReload=True)
    itchat.run(debug=True)
    return
 
@@ -40,7 +39,6 @@ def RemoveTaskByCode(code):
    ret = db.RemoveTaskByCode(code)
    return ret
 
-Whitelist = ['杨琳', 'Li Haifeng', '黄海军']
 @itchat.msg_register([itchat.content.TEXT])
 def WeChatReceiveHandler(msg):
    # user is in the User list, then look through the database
@@ -49,15 +47,17 @@ def WeChatReceiveHandler(msg):
    # Else, call the Microsoft xiaobing's API
    user = msg.User.RemarkName
    content = msg.content
-   print('>>>',content)
+   #print('>>>',content)
    code = content.strip()
+   entries = db.ListMembers()
+   Whitelist = [entry['remarkName'] for entry in entries]
    if user not in Whitelist:
       return
    taskTitle = GetTaskTitleByCode(code)
    if not taskTitle:
       return
    toUserName = msg.FromUserName
-   itchat.send(u'任务已经完成，谢谢!',toUserName=toUserName)
+   itchat.send(u'[测试]任务({}...)已经完成，谢谢!'.format(taskTitle[0:30]),toUserName=toUserName)
    # TODO: check the result
    RemoveTaskByCode(code)
 
@@ -81,12 +81,13 @@ def SendReminder():
       entry = taskQueue.get()
       taskOwnerId = entry['taskOwnerId']
       remarkName = db.GetRemarkNameById(taskOwnerId)
-      print(remarkName)
+      #print(remarkName)
       taskName = entry['taskName']
       code = entry['code']
+      clock = entry['clock']
       code = code.strip()
       toUser = GetToUserName(remarkName)
-      msg = u'【测试】{}，你好。关于{}，请尽快完成。如果已经完成，请回复{}'.format(remarkName, taskName, code)
+      msg = u'[测试]{}，{}，请尽快完成。如果已经完成，请回复任务完成码：{}. 在完成之前，将每{}小时提醒一次，敬请谅解。'.format(remarkName, taskName, code, clock)
       if toUser:
          toUser.send_msg(msg)
 
@@ -94,7 +95,7 @@ def SendReminder():
 def PutEntryToRun(entries):
    #taskQueueLock.acqure()
    for entry in entries:
-      print(entry)
+      #print(entry)
       taskQueue.put(entry)
    #taskQueue.release()
    SendReminder()
@@ -128,9 +129,12 @@ def Scheduler():
 
          if nextAlert < earliestTime:
             earliestTime = nextAlert
-      print('Start to put', RunableEntries)
-      PutEntryToRun(RunableEntries)
-      intervalSeconds = time.mktime(earliestTime) - time.mktime(now)
+      if len(RunableEntries) != 0:
+         print('Start to put', RunableEntries)
+         PutEntryToRun(RunableEntries)
+         intervalSeconds = time.mktime(earliestTime) - time.mktime(now)
+      else:
+         intervalSeconds = None
       cv.acquire()
       cv.wait(timeout=intervalSeconds)
       cv.release()
@@ -143,11 +147,12 @@ def PrepareDatabase():
 def Main():
    # Thread to handle the add event.
    PrepareDatabase()
+   itchat.auto_login(hotReload=True, enableCmdQR=2)
    threads = []
    thread = threading.Thread(target=WebEntry, args=([8090]))
    threads.append(thread)
-   #thread = threading.Thread(target=WeChatEntry)
-   #threads.append(thread)
+   thread = threading.Thread(target=WeChatEntry)
+   threads.append(thread)
    thread = threading.Thread(target=Scheduler)
    threads.append(thread)
    for t in threads:
