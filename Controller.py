@@ -22,13 +22,14 @@ taskQueue = queue.Queue()
 
 
 def WebEntry(port = 80):
-   print('Hello')
+   print('Web thread:%s' % threading.current_thread().getName())
    serverAddress = ('', port)
    HttpHandler = MakeHttpHandler(db, cv)
    server = HTTPServer(serverAddress, HttpHandler)
    server.serve_forever()
    
 def WeChatEntry():
+   print('WeChat thread:%s' % threading.current_thread().getName())
    itchat.run(debug=True)
    return
 
@@ -101,6 +102,7 @@ def PutEntryToRun(entries):
    SendReminder()
 
 def Scheduler():
+   print('Scheduler thread:%s' % threading.current_thread().getName())
    while True:
 		# Read through the todo table and pick up the earlist
 		# entry to wakup.
