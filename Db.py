@@ -80,14 +80,11 @@ class DbHandler:
       if operation == 'DEL':
          #taskOwner = entry['owner']
          print(entry)
-         id = entry.get('id', None)
+         #id = entry.get('id', None)
          code = entry.get('code', None)
          sql = 'delete from TASKS where '
-         if id:
-            sql += 'id = "{}"'.format(id)
-         else:
-            if code:
-               sql += 'code = "{}"'.format(code)
+         if code:
+            sql += 'code = "{}"'.format(code)
 
       if operation == 'Update':
          taskName = entry['taskName']

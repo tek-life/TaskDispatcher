@@ -4,8 +4,10 @@ from urllib.parse import urlparse, parse_qs
 import threading
 #import web
 #from Controller import db,cv
-
-
+CSS_CONTENT = '''
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+'''
 def MakeHttpHandler(db, cv):
     class HttpHandler(BaseHTTPRequestHandler):
         def __init__(self,*argc, **argv):
@@ -89,7 +91,7 @@ def MakeHttpHandler(db, cv):
                 components = parse_qs(query)
                 print('Get query:', components)
                 entry = {}
-                entry['id'] = components['id'][0]
+                entry['code'] = components['code'][0]
                 self.db.UpdateTask(entry,'DEL')
                 data = self.GenerateListTasks(self.db.ListTasks())
             if path.endswith('remove_member.do'):
@@ -108,7 +110,8 @@ def MakeHttpHandler(db, cv):
             return
 
         def GenerateListTasks(self, entries):
-            LIST_TASKS = '''<body>
+            LIST_TASKS = '''<body>''' + CSS_CONTENT
+            LIST_TASKS += '''         
             <br><left><input type="submit" onclick='javascript:history.go(-1);' value="返回"></left>
             <right><input type="submit" onclick='location.href="./index.html"' value="首页"></right>
             </br>
@@ -118,11 +121,11 @@ def MakeHttpHandler(db, cv):
             i = 1
 
             for entry in entries:
-                LIST_TASKS += "<TR> <td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href='remove_task.do?id={}'>删除</a></td></TR>".format(i, entry['taskName'][0:80],
+                LIST_TASKS += "<TR> <td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href='remove_task.do?code={}'>删除</a></td></TR>".format(i, entry['taskName'][0:80],
                                                                               self.db.GetRemarkNameById(entry['taskOwnerId']),
                                                                               entry['site'],
                                                                               entry['code'],
-                                                                              entry['id'])
+                                                                              entry['code'])
                 i += 1
             LIST_TASKS += '''
             </TABLE></body>

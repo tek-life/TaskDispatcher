@@ -65,13 +65,20 @@ def WeChatReceiveHandler(msg):
 def GetToUserName(remarkName):
    #Get toUserName by remarkName
    user = itchat.search_friends(remarkName=remarkName)
+   print('remarkName: %s user:%s' % (remarkName,user))
    return user[0] if user else None
+
+def IsDebug():
+   return True
 
 def UpdateTaskNextAlert(entry):
    clock = entry['clock']
    alert = entry['nextAlert']
    old = datetime.datetime.strptime(alert, TIMEFORMAT)
-   delta =  datetime.timedelta(hours=int(clock))
+   if not IsDebug():
+      delta =  datetime.timedelta(hours=int(clock))
+   else:
+      delta =  datetime.timedelta(seconds=int(clock))
    nextAlert = old + delta
    entry['nextAlert'] = datetime.datetime.strftime(nextAlert,TIMEFORMAT)
    db.UpdateTask(entry, 'Update')
@@ -90,8 +97,9 @@ def SendReminder():
       toUser = GetToUserName(remarkName)
       msg = u'[测试]{}，{}，请尽快完成。如果已经完成，请回复任务完成码：{}. 在完成之前，将每{}小时提醒一次，敬请谅解。'.format(remarkName, taskName, code, clock)
       if toUser:
+         if IsDebug():
+            print('User %s' % toUser)
          toUser.send_msg(msg)
-
 
 def PutEntryToRun(entries):
    #taskQueueLock.acqure()
@@ -107,7 +115,7 @@ def Scheduler():
 		# Read through the todo table and pick up the earlist
 		# entry to wakup.
       entries = db.ListTasks()
-      #print(entries)
+      print(entries)
       RunableEntries = []
       earliestTime = datetime.datetime.max
       earliestTime = earliestTime.strftime(TIMEFORMAT)
@@ -122,7 +130,7 @@ def Scheduler():
          #print(entry['nextAlert'])
 
          nextAlert = time.strptime(entry['nextAlert'],TIMEFORMAT)
-         #print('<<<<',nextAlert, now)
+         print('<<<<',nextAlert, now)
          if nextAlert <= now:
             #print('***',entry, now)
             RunableEntries.append(entry)
