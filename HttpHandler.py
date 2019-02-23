@@ -6,7 +6,6 @@ import threading
 #from Controller import db,cv
 CSS_CONTENT = '''
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 '''
 def MakeHttpHandler(db, cv):
     class HttpHandler(BaseHTTPRequestHandler):
@@ -21,6 +20,7 @@ def MakeHttpHandler(db, cv):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             # self.send_header("Content-Length", str(len(data)))
             self.end_headers()
+            self.wfile.write(bytes(CSS_CONTENT, encoding='utf-8'))
             self.wfile.write(bytes(data, encoding='utf-8'))
         def _CreateTransitPage(self, data, waitSeconds = 0, forwordingPage = './index.html', ):
             print(data, len(data))
@@ -110,13 +110,12 @@ def MakeHttpHandler(db, cv):
             return
 
         def GenerateListTasks(self, entries):
-            LIST_TASKS = '''<body>''' + CSS_CONTENT
-            LIST_TASKS += '''         
+            LIST_TASKS = '''<body><div class="container-fluid">
             <br><left><input type="submit" onclick='javascript:history.go(-1);' value="返回"></left>
             <right><input type="submit" onclick='location.href="./index.html"' value="首页"></right>
             </br>
-            <table>
-            <TH></TH>
+            <table class='table table-striped table-bordered table-hover'>
+            <Tr><th>#</th><th>任务概述</th><th>负责人</th><th>地址</th><th>任务码</th><th>编辑</th></Tr>
             '''
             i = 1
 
@@ -128,30 +127,32 @@ def MakeHttpHandler(db, cv):
                                                                               entry['code'])
                 i += 1
             LIST_TASKS += '''
-            </TABLE></body>
+            </TABLE></div></body>
             '''
 
             return LIST_TASKS
 
         def GenerateListMembers(self, entries):
-            LIST_TASKS = '''<body>
+            LIST_TASKS = '''<body><div class="container-fluid">
              <br><input type="submit" onclick='javascript:history.go(-1);' value="返回">
              <right><input type="submit" onclick='location.href="./index.html"' value="首页"></right>
              </br>
-             <table>
-             <TH></TH>
+             <table class='table table-striped table-bordered table-hover'>
+             <Tr><th>#</th><th>备注名</th><th>微信登陆用户名</th><th>手机</th><th>编辑</th></Tr>
+             
              '''
             i = 1
             for entry in entries:
-                LIST_TASKS += "<TR> <td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href='remove_member.do?id={}'>删除</a></td></TR>".format(i,
+                LIST_TASKS += "<TR> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td><td><a href='remove_member.do?id={}'>删除</a></td></TR>".format(
+                                                                                              i,
                                                                                               entry['remarkName'][0:80],
                                                                                               entry['userId'],
                                                                                               entry['mobile'],
-                                                                                              entry['isExist'],
-                                                                                              entry['id'])
+                                                                                              entry['id']
+                                                                                              )
                 i += 1
             LIST_TASKS += '''
-             </TABLE></body>
+             </TABLE></div></body>
              '''
             return LIST_TASKS
 
@@ -163,7 +164,7 @@ def MakeHttpHandler(db, cv):
                return
             print(entries)
             ADD_TASK_CONTENT = """
-            <body>
+            <body><div class="container-fluid">
             <script type="text/javascript">
             function myCheck()
             {
@@ -183,22 +184,31 @@ def MakeHttpHandler(db, cv):
             <br><input type="submit" onclick='javascript:history.go(-1);' value="返回">
             <right><input type="submit" onclick='location.href="./index.html"' value="首页"></right></br>
             <form name = 'addTask' method = 'post' action="add_task.submit" onSubmit="return myCheck()">
-            任务概述(80字以内):<br>
-            <input type="text" name="taskName" value="" size=100%>
-            <br>经办人:<br>
-            <select name="taskOwnerId">"""
+            <div class="form-group">
+            <label>任务概述(80字以内):</label>
+            <input type="text" name="taskName" value="" class="form-control">
+            <div class="form-group">
+            <label>负责人:</label>
+            <select name="taskOwnerId" class="form-control">"""
             for entry in entries:
                 ADD_TASK_CONTENT += '<option value="{}">{}</option>'.format(entry['id'], entry['remarkName'])
             ADD_TASK_CONTENT += """
             </select>
-            <br>维护地点:<br>
-            <input type="text" name="site" value="" size=100%>
-            <br>通知频率（计时单位：小时)<br>
+            </div>
+            <div class="form-group">
+            <label>维护地点:</label>
+            <input type="text" name="site" value="" class="form-control">
+            </div>
+            <div class="form-group">
+            <label>通知频率：</label><br>
+            <div class="input-group">
             <input type="number" name="clock" value="">
-            <br>
+            <div class="input-group-addon"> 小时</div>
+            </div>
+            </div>
             <input type="submit" value="Submit">
             </form>
-            </body>
+            </div></body>
             <foot></foot>
             """
             return ADD_TASK_CONTENT
@@ -207,6 +217,7 @@ def MakeHttpHandler(db, cv):
 
 
 ADD_MEMBER_CONTENT='''<body>
+<div class="container-fluid">
 <script type="text/javascript">
             function myCheck()
             {
@@ -225,18 +236,24 @@ ADD_MEMBER_CONTENT='''<body>
             </script>
 <br><input type="submit" onclick='javascript:history.go(-1);' value="返回">
 <right><input type="submit" onclick='location.href="./index.html"' value="首页"></right></br>
-<form name='addMember' method = 'post' action="add_member.submit" onSubmit='return myCheck()'>
-备注名:<br>
-<input type="text" name="remarkName" value="">
-<br>
-微信用户ID:<br>
-<input type="text" name="userId" value="">
-<br>
-手机号:<br>
-<input type="text" name="mobile" value="">
-<br><br>
+<form class="form-horizontal" name='addMember' method = 'post' action="add_member.submit" onSubmit='return myCheck()'>
+
+<div class="form-group">
+<label class="col-sm-2 control-label">备注名:</label>
+<div class="col-sm-10"><input type="text" class="form-control"  name="remarkName" value=""></div>
+</div>
+<div class="form-group">
+<label class="col-sm-2 control-label">微信用户ID:</label>
+<div class="col-sm-10"><input type="text" class="form-control"  name="userId" value=""></div>
+</div>
+<div class="form-group">
+<label class="col-sm-2 control-label">手机号:</label>
+<div class="col-sm-10">
+<input type="text" class="form-control"  name="mobile" value="">
+</div>
+</div>
 <input type="submit" value="Submit">
 </form> 
-</body>
+</div></body>
 <foot></foot>
 '''

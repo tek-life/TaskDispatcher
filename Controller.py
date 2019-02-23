@@ -78,7 +78,7 @@ def UpdateTaskNextAlert(entry):
    if not IsDebug():
       delta =  datetime.timedelta(hours=int(clock))
    else:
-      delta =  datetime.timedelta(seconds=int(clock))
+      delta =  datetime.timedelta(seconds=300)
    nextAlert = old + delta
    entry['nextAlert'] = datetime.datetime.strftime(nextAlert,TIMEFORMAT)
    db.UpdateTask(entry, 'Update')
@@ -157,12 +157,12 @@ def PrepareDatabase():
 def Main():
    # Thread to handle the add event.
    PrepareDatabase()
-   itchat.auto_login(hotReload=True, enableCmdQR=2)
+  # itchat.auto_login(hotReload=True, enableCmdQR=2)
    threads = []
    thread = threading.Thread(target=WebEntry, args=([8090]))
    threads.append(thread)
-   thread = threading.Thread(target=WeChatEntry)
-   threads.append(thread)
+ #  thread = threading.Thread(target=WeChatEntry)
+ #  threads.append(thread)
    thread = threading.Thread(target=Scheduler)
    threads.append(thread)
    for t in threads:
