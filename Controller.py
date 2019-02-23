@@ -157,12 +157,12 @@ def PrepareDatabase():
 def Main():
    # Thread to handle the add event.
    PrepareDatabase()
-  # itchat.auto_login(hotReload=True, enableCmdQR=2)
+   itchat.auto_login(hotReload=True, enableCmdQR=2)
    threads = []
    thread = threading.Thread(target=WebEntry, args=([8090]))
    threads.append(thread)
- #  thread = threading.Thread(target=WeChatEntry)
- #  threads.append(thread)
+   thread = threading.Thread(target=WeChatEntry)
+   threads.append(thread)
    thread = threading.Thread(target=Scheduler)
    threads.append(thread)
    for t in threads:
