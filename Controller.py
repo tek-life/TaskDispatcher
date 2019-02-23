@@ -69,7 +69,7 @@ def GetToUserName(remarkName):
    return user[0] if user else None
 
 def IsDebug():
-   return True
+   return False
 
 def UpdateTaskNextAlert(entry):
    clock = entry['clock']
