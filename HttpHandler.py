@@ -205,7 +205,7 @@ def MakeHttpHandler(db, cv):
             <div class="form-group">
             <label>通知频率：</label><br>
             <div class="input-group">
-            <input type="number" name="clock" value="">
+            <input type="number" name="clock" value="" class="form-control">
             <div class="input-group-addon"> 小时</div>
             </div>
             </div>
